@@ -1,27 +1,37 @@
 (async function () {
   const st = { placeId: '', days: 1, tripType: 'round', mode: 'driver', start: '' };
-  let cfg, places, booked = [], lastQuote = null;
+  let cfg = { pricing: { ratePerKm: 12, driverBataPerDay: 200, selfDeposit: 5000 }, maxPassengers: 7, maxDays: 30, daysOptions: [1, 2, 3, 4, 5, 7], priceNotes: [] };
+  let places = [], booked = [], lastQuote = null;
   const DRAFT_KEY = 'vcr_draft';
 
   try {
-    [cfg, places, booked] = await Promise.all([api('/api/config'), api('/api/places'), api('/api/booked').catch(() => [])]);
+    const [c, p, b] = await Promise.all([
+      api('/api/config').catch(() => null),
+      api('/api/places').catch(() => []),
+      api('/api/booked').catch(() => [])
+    ]);
+    if (c) cfg = Object.assign(cfg, c);
+    if (p && p.length) places = p;
+    booked = b || [];
   } catch (e) {
-    const el = $('#load-err'); el.textContent = e.message; el.classList.remove('hidden');
+    const el = $('#load-err');
+    if (el) { el.textContent = e.message; el.classList.remove('hidden'); }
     return;
   }
 
   /* destination dropdown: Popular first, then each state nearest-first */
   const dest = $('#dest');
-  const opt = (p) => `<option value="${esc(p.id)}">${esc(p.name)} – ${p.km} km</option>`;
-  const group = (label, list) => `<optgroup label="${esc(label)}">${list.map(opt).join('')}</optgroup>`;
+  const opt = (p) => `<option value="${esc(p.id != null ? p.id : p.name)}">${esc(p.name)} – ${p.km} km</option>`;
+  const group = (label, list) => list.length ? `<optgroup label="${esc(label)}">${list.map(opt).join('')}</optgroup>` : '';
   const byKm = (a, b) => a.km - b.km;
+
   dest.innerHTML = '<option value="">Select destination…</option>'
     + group('Popular', places.filter((p) => p.popular).sort(byKm))
     + group('Telangana', places.filter((p) => !p.popular && p.state === 'Telangana').sort(byKm))
     + group('Andhra Pradesh', places.filter((p) => !p.popular && p.state === 'Andhra Pradesh').sort(byKm));
 
-  $('#b-pax').max = cfg.maxPassengers;
-  $('#days').max = cfg.maxDays;
+  $('#b-pax').max = cfg.maxPassengers || 7;
+  $('#days').max = cfg.maxDays || 30;
   const today = new Date();
   $('#start').min = localISO(today);
   const tomorrow = new Date(today.getTime() + 86400000);
@@ -39,8 +49,10 @@
       dest.value = st.placeId || '';
       $('#days').value = st.days;
       $('#start').value = st.start || $('#start').value;
-      $(`input[name=tripType][value=${st.tripType}]`).checked = true;
-      $(`input[name=mode][value=${st.mode}]`).checked = true;
+      const ttEl = $(`input[name=tripType][value=${st.tripType}]`);
+      if (ttEl) ttEl.checked = true;
+      const mEl = $(`input[name=mode][value=${st.mode}]`);
+      if (mEl) mEl.checked = true;
       if (d.form) {
         if (d.form.name && !u) $('#b-name').value = d.form.name;
         if (d.form.phone && !u) $('#b-phone').value = d.form.phone;
@@ -55,21 +67,72 @@
   const btn = $('#book-btn');
   btn.textContent = Auth.token ? 'Book now' : 'Login to book';
 
-  /* ---------- quote ---------- */
-  let seq = 0;
-  async function refresh() {
+  /* ---------- Accurate ₹12/km Quote Calculator ---------- */
+  function refresh() {
     checkDates();
-    if (!st.placeId) { lastQuote = null; $('#timeline').innerHTML = ''; $('#quote-body').innerHTML = '<div class="empty">Choose a destination to see the fare.</div>'; return; }
-    const mine = ++seq;
-    try {
-      const r = await api('/api/quote', { method: 'POST', body: { placeId: st.placeId, days: st.days, tripType: st.tripType, mode: st.mode } });
-      if (mine !== seq) return;
-      lastQuote = r;
-      renderQuote(r);
-    } catch (e) {
-      if (mine !== seq) return;
-      $('#quote-body').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+    if (!st.placeId) {
+      lastQuote = null;
+      $('#timeline').innerHTML = '';
+      $('#quote-body').innerHTML = '<div class="empty">Choose a destination to see the fare.</div>';
+      return;
     }
+
+    const place = places.find((p) => String(p.id) === String(st.placeId) || p.name === st.placeId);
+    if (!place) return;
+
+    // 1. Strict ₹12 per km rule
+    const ratePerKm = (cfg.pricing && cfg.pricing.ratePerKm) || 12;
+    const driverBataPerDay = (cfg.pricing && cfg.pricing.driverBataPerDay) || 200;
+    const depositAmount = (cfg.pricing && cfg.pricing.selfDeposit) || 5000;
+
+    const oneWayKm = place.km;
+    const totalKm = (st.tripType === 'round') ? (oneWayKm * 2) : oneWayKm;
+    const billableKm = totalKm;
+    const kmFare = billableKm * ratePerKm;
+
+    // 2. Driver charge: +₹200 per day with driver, ₹0 for self-drive
+    const driverBata = (st.mode === 'driver') ? (driverBataPerDay * st.days) : 0;
+    const total = kmFare + driverBata;
+
+    const lines = [
+      { label: `${billableKm} km × ₹${ratePerKm}`, amount: kmFare }
+    ];
+
+    if (st.mode === 'driver') {
+      lines.push({
+        label: `Driver bata (${st.days} day${st.days > 1 ? 's' : ''} × ₹${driverBataPerDay})`,
+        amount: driverBata
+      });
+    } else {
+      lines.push({
+        label: 'Self drive (no driver fee)',
+        amount: 0
+      });
+    }
+
+    const daysOptions = cfg.daysOptions || [1, 2, 3, 4, 5, 7];
+    const timeline = daysOptions.map((d) => ({
+      days: d,
+      billableKm,
+      total: kmFare + (st.mode === 'driver' ? (driverBataPerDay * d) : 0)
+    }));
+
+    const r = {
+      place,
+      quote: {
+        totalKm,
+        billableKm,
+        includedKm: totalKm,
+        days: st.days,
+        total,
+        lines,
+        deposit: st.mode === 'self' ? depositAmount : 0
+      },
+      timeline
+    };
+
+    lastQuote = r;
+    renderQuote(r);
   }
 
   function renderQuote(r) {
@@ -77,15 +140,25 @@
     const facts = [
       `${r.place.km} km one way`,
       st.tripType === 'round' ? `${q.totalKm} km round trip` : 'One-way drop',
-      st.mode === 'self' ? `${q.includedKm} km included` : `${q.billableKm} km billed`,
+      `${q.billableKm} km billed`
     ].map((f) => `<span class="fact">${esc(f)}</span>`).join('');
+
+    const defaultNotes = [
+      'Rate: Flat ₹12 per km across all destinations.',
+      'Driver bata: ₹200/day (only for with driver).',
+      'Tolls, parking and border permits are extra as per actuals.',
+      'Self drive: Fuel paid by customer. ₹5,000 refundable deposit taken at pickup.'
+    ];
+    const notesToShow = (cfg.priceNotes && cfg.priceNotes.length) ? cfg.priceNotes : defaultNotes;
+
     $('#quote-body').innerHTML = `
       <div class="facts">${facts}</div>
       <div><b>Jadcherla → ${esc(r.place.name)}</b><br><span style="color:var(--muted);font-size:14px">${q.days} day${q.days > 1 ? 's' : ''}${st.start ? ' · from ' + esc(fmtDate(st.start)) : ''}</span></div>
-      <div class="total"><div><small>Estimated fare</small></div><div class="amt">${inr(q.total)}</div></div>
+      <div class="total"><div><small>Estimated fare (${st.mode === 'driver' ? 'With driver' : 'Self drive'})</small></div><div class="amt">${inr(q.total)}</div></div>
       <ul class="lines">${q.lines.map((l) => `<li><span>${esc(l.label)}</span><b>${inr(l.amount)}</b></li>`).join('')}
         ${q.deposit ? `<li><span>Refundable deposit at pickup (not part of fare)</span><b>${inr(q.deposit)}</b></li>` : ''}</ul>
-      <ul class="notes">${cfg.priceNotes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`;
+      <ul class="notes">${notesToShow.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`;
+
     $('#timeline').innerHTML = r.timeline.map((t) => `
       <button type="button" class="tl ${t.days === st.days ? 'on' : ''}" data-d="${t.days}">
         <span class="d">${t.days} day${t.days > 1 ? 's' : ''}</span><span class="p">${inr(t.total)}</span><span class="k">${t.billableKm} km</span>
@@ -106,7 +179,7 @@
 
   /* ---------- inputs ---------- */
   const setDays = (n) => {
-    n = Math.max(1, Math.min(cfg.maxDays, Math.round(Number(n)) || 1));
+    n = Math.max(1, Math.min(cfg.maxDays || 30, Math.round(Number(n)) || 1));
     st.days = n; $('#days').value = n; refresh();
   };
   dest.onchange = () => { st.placeId = dest.value; refresh(); };
@@ -118,7 +191,7 @@
   $('#days').onchange = (e) => setDays(e.target.value);
   $('#timeline').onclick = (e) => { const b = e.target.closest('.tl'); if (b) setDays(b.dataset.d); };
 
-  /* ---------- booking ---------- */
+  /* ---------- booking submission ---------- */
   const showMsg = (html, cls = 'err') => { $('#book-msg').innerHTML = html ? `<div class="msg ${cls}">${esc(html)}</div>` : ''; };
 
   $('#book-form').onsubmit = async (e) => {
@@ -135,9 +208,22 @@
     }
     btn.disabled = true; btn.textContent = 'Booking…';
     try {
+      const estimatedFare = lastQuote ? lastQuote.quote.total : undefined;
       const { booking } = await api('/api/bookings', {
         method: 'POST',
-        body: { placeId: st.placeId, days: st.days, tripType: st.tripType, mode: st.mode, startDate: st.start, passengers: Number(form.pax), name: form.name, phone: form.phone, pickupPoint: form.pickup, notes: form.notes },
+        body: {
+          placeId: st.placeId,
+          days: st.days,
+          tripType: st.tripType,
+          mode: st.mode,
+          startDate: st.start,
+          passengers: Number(form.pax),
+          name: form.name,
+          phone: form.phone,
+          pickupPoint: form.pickup,
+          notes: form.notes,
+          fare: estimatedFare
+        },
       });
       showConfirm(booking);
     } catch (err) {
@@ -162,7 +248,7 @@
       <div style="font-size:14px;color:var(--muted)">Jadcherla → <b style="color:var(--ink)">${esc(b.placeName)}</b><br>${esc(fmtDate(b.startDate))} – ${esc(fmtDate(b.endDate))} · ${b.days} day${b.days > 1 ? 's' : ''}<br>Estimated fare <b style="color:var(--ink)">${inr(b.fare)}</b></div>
       <p style="font-size:14px">Status: <b>Pending</b>. We will confirm on your phone. For a faster reply, send the details on WhatsApp.</p>
       <div class="row">
-        <a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${esc(cfg.whatsapp)}?text=${encodeURIComponent(text)}">Send on WhatsApp</a>
+        <a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${esc(cfg.whatsapp || '917995301676')}?text=${encodeURIComponent(text)}">Send on WhatsApp</a>
         <a class="btn btn-line" href="/bookings.html">My bookings</a>
       </div>`;
     c.scrollIntoView({ behavior: 'smooth', block: 'center' });
