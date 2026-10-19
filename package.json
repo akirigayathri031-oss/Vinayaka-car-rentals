@@ -1,0 +1,8 @@
+{
+  "name": "vinayaka-car-rentals",
+  "version": "1.0.0",
+  "description": "Vinayaka Car Rentals - Ertiga rental website with login, signup, fare calculator and bookings",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": "20.x" }
+}

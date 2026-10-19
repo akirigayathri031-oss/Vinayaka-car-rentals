@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My bookings – Vinayaka Car Rentals</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="page"><div class="wrap">
+  <h1 class="sec-title">My bookings</h1>
+  <p class="sec-sub">Your trips with Vinayaka Car Rentals. Questions? Call <a href="tel:+917995301676">79953 01676</a>.</p>
+  <div id="msg"></div>
+  <div id="list" class="blist"></div>
+  <p style="margin-top:22px"><a class="btn btn-yellow" href="/#book">+ New booking</a></p>
+</div></main>
+<footer id="site-footer"></footer>
+<script src="/common.js"></script>
+<script>
+  if (!Auth.token) location.replace('/login.html?next=' + encodeURIComponent('/bookings.html'));
+
+  function card(b) {
+    const canCancel = b.status === 'pending' || b.status === 'confirmed';
+    return `<div class="bcard">
+      <div class="top"><span class="id">${esc(b.id)}</span><span class="status ${esc(b.status)}">${esc(b.status)}</span></div>
+      <div><b>Jadcherla → ${esc(b.placeName)}</b> <span style="color:var(--muted)">(${b.tripType === 'round' ? 'round trip' : 'one way'})</span></div>
+      <div class="meta">
+        <span>📅 <b>${esc(fmtDate(b.startDate))}</b> to <b>${esc(fmtDate(b.endDate))}</b> (${b.days} day${b.days > 1 ? 's' : ''})</span>
+        <span>🚗 <b>${b.mode === 'self' ? 'Self drive' : 'With driver'}</b></span>
+        <span>👥 <b>${b.passengers}</b></span>
+        <span>💰 Estimated <b>${inr(b.fare)}</b>${b.deposit ? ' + ' + inr(b.deposit) + ' refundable deposit' : ''}</span>
+      </div>
+      ${b.notes ? `<div class="meta">📝 ${esc(b.notes)}</div>` : ''}
+      <div class="acts">
+        ${canCancel ? `<button class="btn btn-line btn-sm" data-cancel="${esc(b.id)}">Cancel booking</button>` : ''}
+        <a class="btn btn-line btn-sm" href="tel:+917995301676">Call us</a>
+      </div></div>`;
+  }
+
+  async function load() {
+    try {
+      const { bookings } = await api('/api/my-bookings');
+      $('#list').innerHTML = bookings.length ? bookings.map(card).join('') : '<div class="empty">You have no bookings yet.</div>';
+    } catch (e) {
+      if (e.status === 401) return location.replace('/login.html?next=' + encodeURIComponent('/bookings.html'));
+      $('#msg').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+    }
+  }
+  $('#list').onclick = async (e) => {
+    const id = e.target.dataset && e.target.dataset.cancel;
+    if (!id || !confirm('Cancel booking ' + id + '?')) return;
+    try { await api('/api/bookings/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: {} }); load(); }
+    catch (err) { $('#msg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`; }
+  };
+  load();
+</script>
+</body>
+</html>

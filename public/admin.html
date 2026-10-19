@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Owner panel – Vinayaka Car Rentals</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main class="page"><div class="wrap">
+  <h1 class="sec-title">Owner panel</h1>
+  <p class="sec-sub">See all booking requests and confirm or reject them. Confirmed dates are blocked for other customers.</p>
+  <div id="msg"></div>
+  <form id="keyform" class="card" style="max-width:420px;margin-bottom:20px">
+    <div class="field"><label for="key">Admin key</label><input id="key" type="password" autocomplete="off" required></div>
+    <button class="btn btn-dark btn-block" type="submit">Open</button>
+  </form>
+  <div id="list" class="blist"></div>
+</div></main>
+<footer id="site-footer"></footer>
+<script src="/common.js"></script>
+<script>
+  let key = '';
+  try { key = sessionStorage.getItem('vcr_admin') || ''; } catch (_) {}
+  const H = () => ({ 'x-admin-key': key });
+
+  function card(b) {
+    const btns = [['confirmed', 'Confirm', 'btn-dark'], ['rejected', 'Reject', 'btn-line'], ['completed', 'Mark completed', 'btn-line'], ['cancelled', 'Cancel', 'btn-line']]
+      .filter(([s]) => s !== b.status)
+      .map(([s, l, c]) => `<button class="btn ${c} btn-sm" data-id="${esc(b.id)}" data-s="${s}">${l}</button>`).join('');
+    return `<div class="bcard">
+      <div class="top"><span class="id">${esc(b.id)}</span><span class="status ${esc(b.status)}">${esc(b.status)}</span></div>
+      <div><b>${esc(b.name)}</b> · <a href="tel:${esc(b.phone)}">${esc(b.phone)}</a> · <a target="_blank" rel="noopener" href="https://wa.me/91${esc(b.phone)}">WhatsApp</a></div>
+      <div><b>Jadcherla → ${esc(b.placeName)}</b> (${b.tripType === 'round' ? 'round trip' : 'one way'}, ${b.mode === 'self' ? 'self drive' : 'with driver'})</div>
+      <div class="meta"><span>📅 <b>${esc(fmtDate(b.startDate))}</b> to <b>${esc(fmtDate(b.endDate))}</b> (${b.days}d)</span><span>👥 ${b.passengers}</span><span>📍 ${esc(b.pickupPoint)}</span><span>💰 <b>${inr(b.fare)}</b>${b.deposit ? ' + deposit ' + inr(b.deposit) : ''}</span></div>
+      ${b.notes ? `<div class="meta">📝 ${esc(b.notes)}</div>` : ''}
+      <div class="acts">${btns}</div></div>`;
+  }
+
+  async function load() {
+    $('#msg').innerHTML = '';
+    if (!key) return;
+    try {
+      const { bookings } = await api('/api/admin/bookings', { headers: H() });
+      $('#keyform').classList.add('hidden');
+      $('#list').innerHTML = bookings.length ? bookings.map(card).join('') : '<div class="empty">No bookings yet.</div>';
+    } catch (e) {
+      $('#keyform').classList.remove('hidden');
+      $('#list').innerHTML = '';
+      $('#msg').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+    }
+  }
+  $('#keyform').onsubmit = (e) => { e.preventDefault(); key = $('#key').value; try { sessionStorage.setItem('vcr_admin', key); } catch (_) {} load(); };
+  $('#list').onclick = async (e) => {
+    const t = e.target; if (!t.dataset || !t.dataset.s) return;
+    try { await api('/api/admin/bookings/' + encodeURIComponent(t.dataset.id) + '/status', { method: 'POST', headers: H(), body: { status: t.dataset.s } }); load(); }
+    catch (err) { $('#msg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`; }
+  };
+  load();
+</script>
+</body>
+</html>

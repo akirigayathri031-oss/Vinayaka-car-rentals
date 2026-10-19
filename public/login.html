@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login – Vinayaka Car Rentals</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="sub">Log in with your mobile number to book the Ertiga.</p>
+    <div id="msg"></div>
+    <form id="f" novalidate>
+      <div class="field"><label for="phone">Mobile number</label><input id="phone" type="tel" inputmode="numeric" autocomplete="username" placeholder="10-digit number" required></div>
+      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-red btn-block" id="go" type="submit">Login</button>
+    </form>
+    <div class="alt">New here? <a id="to-signup" href="/signup.html">Create an account</a></div>
+  </div>
+</div>
+<footer id="site-footer"></footer>
+<script src="/common.js"></script>
+<script>
+  const next = safeNext(new URLSearchParams(location.search).get('next'));
+  $('#to-signup').href = '/signup.html?next=' + encodeURIComponent(next);
+  if (Auth.token) location.replace(next);
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    const b = $('#go'); $('#msg').innerHTML = '';
+    b.disabled = true; b.textContent = 'Logging in…';
+    try {
+      const r = await api('/api/login', { method: 'POST', body: { phone: $('#phone').value, password: $('#pw').value } });
+      Auth.set(r.token, r.user);
+      location.href = next;
+    } catch (err) {
+      $('#msg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`;
+      b.disabled = false; b.textContent = 'Login';
+    }
+  };
+</script>
+</body>
+</html>

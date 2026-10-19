@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinayaka Car Rentals – Ertiga on rent from Jadcherla</title>
+<meta name="description" content="Rent a Maruti Suzuki Ertiga from Jadcherla. Airport drop, Vijayawada, Vizag, Jogulamba and all over Telangana and Andhra Pradesh. Self drive or with driver.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Safe · Comfortable · Always with you</span>
+      <h1>Ertiga car<br><span class="y">on rent</span></h1>
+      <p class="lead">From Jadcherla to Hyderabad Airport, Vijayawada, Vizag, Jogulamba and all over Telangana &amp; Andhra Pradesh. Pick your days, see the fare, book in a minute.</p>
+      <div class="badges"><span class="badge">Date Free</span><span class="badge red">Self drive / With driver</span></div>
+      <div class="actions">
+        <a class="btn btn-yellow" href="#book">Check fare &amp; book</a>
+        <a class="btn btn-ghost" href="tel:+917995301676">📞 79953 01676</a>
+      </div>
+    </div>
+    <div class="hero-img">
+      <img src="/ertiga.jpg" alt="White Maruti Suzuki Ertiga available for rent" width="1100" height="684">
+      <div class="tag">Drive Your Dreams</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="features">
+    <div class="feature"><span class="ic">👨‍👩‍👧‍👦</span>Spacious &amp; Comfortable</div>
+    <div class="feature"><span class="ic">🛡️</span>Well Maintained Vehicles</div>
+    <div class="feature"><span class="ic">⛽</span>Fuel Efficient</div>
+    <div class="feature"><span class="ic">🧑‍✈️</span>Self Drive / With Driver Available</div>
+  </div>
+</div>
+
+<section id="car">
+  <div class="wrap">
+    <h2 class="sec-title">Our car</h2>
+    <p class="sec-sub">One car, kept clean and ready for your trip.</p>
+    <div class="car-card">
+      <img src="/ertiga.jpg" alt="Maruti Suzuki Ertiga, front view" loading="lazy">
+      <div class="car-body">
+        <h3>Maruti Suzuki Ertiga</h3>
+        <div style="color:var(--muted);font-weight:600">Comfort ride for your destinations</div>
+        <ul>
+          <li>Spacious &amp; comfortable</li>
+          <li>Well maintained vehicle</li>
+          <li>Fuel efficient</li>
+          <li>Self drive or with driver – your choice</li>
+          <li>For 1 day, 2 days or more – no date restrictions</li>
+        </ul>
+        <a class="btn btn-red" href="#book">Book this car</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="book" style="padding-top:10px">
+  <div class="wrap">
+    <h2 class="sec-title">Plan your trip &amp; see the fare</h2>
+    <p class="sec-sub">All trips start from <b>Jadcherla</b>. Choose where you want to go and for how many days – the fare updates instantly.</p>
+    <div id="load-err" class="msg err hidden"></div>
+
+    <div class="planner">
+      <div class="card" id="plan-card">
+        <h3>1 · Your trip</h3>
+        <div class="field"><label>Pickup from</label><div class="fixed-from">📍 Jadcherla</div></div>
+        <div class="field">
+          <label for="dest">Going to</label>
+          <select id="dest"></select>
+        </div>
+        <div class="field">
+          <label>Trip type</label>
+          <div class="seg" role="radiogroup" aria-label="Trip type">
+            <input type="radio" name="tripType" id="tt-round" value="round" checked><label for="tt-round">Round trip<br><small>return to Jadcherla</small></label>
+            <input type="radio" name="tripType" id="tt-oneway" value="oneway"><label for="tt-oneway">One-way drop<br><small>only going</small></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Driver</label>
+          <div class="seg" role="radiogroup" aria-label="Driver option">
+            <input type="radio" name="mode" id="m-driver" value="driver" checked><label for="m-driver">With driver</label>
+            <input type="radio" name="mode" id="m-self" value="self"><label for="m-self">Self drive</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="start">Pickup date</label>
+            <input type="date" id="start">
+          </div>
+          <div class="field">
+            <label for="days">Number of days</label>
+            <div class="stepper">
+              <button type="button" id="dminus" aria-label="One day less">−</button>
+              <input type="number" id="days" min="1" max="30" value="1" inputmode="numeric">
+              <button type="button" id="dplus" aria-label="One day more">+</button>
+            </div>
+          </div>
+        </div>
+        <div id="dates-note" class="msg warn hidden"></div>
+        <label style="margin-top:4px">Fare by number of days <small style="font-weight:400;color:var(--muted)">(tap to choose)</small></label>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+      <div style="display:grid;gap:22px">
+        <div class="card" id="quote-card">
+          <h3>2 · Fare estimate</h3>
+          <div id="quote-body"><div class="empty">Choose a destination to see the fare.</div></div>
+        </div>
+
+        <div class="card" id="book-card">
+          <h3>3 · Book the car</h3>
+          <div id="book-form-wrap">
+            <div id="book-msg"></div>
+            <form id="book-form" novalidate>
+              <div class="grid2">
+                <div class="field"><label for="b-name">Passenger name</label><input id="b-name" autocomplete="name" required></div>
+                <div class="field"><label for="b-phone">Mobile number</label><input id="b-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10-digit number" required></div>
+              </div>
+              <div class="grid2">
+                <div class="field"><label for="b-pax">Passengers</label><input id="b-pax" type="number" min="1" max="7" value="2" inputmode="numeric"></div>
+                <div class="field"><label for="b-pickup">Exact pickup place</label><input id="b-pickup" value="Jadcherla" maxlength="120"></div>
+              </div>
+              <div class="field"><label for="b-notes">Anything we should know? <small style="font-weight:400;color:var(--muted)">(optional)</small></label><textarea id="b-notes" maxlength="300" placeholder="Pickup time, extra stops, luggage…"></textarea></div>
+              <button class="btn btn-red btn-block" id="book-btn" type="submit">Book now</button>
+              <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">You need to log in to book. No online payment – pay the owner directly after confirmation.</p>
+            </form>
+          </div>
+          <div id="confirm" class="confirm hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="site-footer"></footer>
+<a class="btn btn-yellow sticky-call" href="tel:+917995301676">📞 Call</a>
+<script src="/common.js"></script>
+<script src="/home.js"></script>
+</body>
+</html>

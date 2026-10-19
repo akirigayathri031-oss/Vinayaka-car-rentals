@@ -1,0 +1,28 @@
+{
+  "brand": "Vinayaka Car Rentals",
+  "tagline": "Safe · Comfortable · Always with you",
+  "phone": "7995301676",
+  "whatsapp": "917995301676",
+  "carName": "Maruti Suzuki Ertiga",
+  "baseCity": "Jadcherla",
+  "maxPassengers": 7,
+  "daysOptions": [1, 2, 3, 4, 5, 7],
+  "maxDays": 30,
+  "pricing": {
+    "ratePerKm": 14,
+    "minKmPerDay": 300,
+    "driverBataPerDay": 500,
+    "transferMaxKm": 60,
+    "transferRatePerKm": 16,
+    "minTransferFare": 1500,
+    "selfDrivePerDay": 2800,
+    "selfKmLimitPerDay": 250,
+    "selfExtraPerKm": 12,
+    "selfDeposit": 5000
+  },
+  "priceNotes": [
+    "Toll, parking and state border / permit charges are extra, paid as per actual.",
+    "Self drive: fuel is paid by the customer. A refundable deposit is taken at pickup.",
+    "Fares shown are estimates. The booking is final only after Vinayaka Car Rentals confirms it."
+  ]
+}
