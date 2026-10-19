@@ -10,21 +10,13 @@
   "maxDays": 30,
   "pricing": {
     "ratePerKm": 12,
-    "minKmPerDay": 250,
-    "driverBataPerDay": 500,
-    "transferMaxKm": 60,
-    "transferRatePerKm": 12,
-    "minTransferFare": 1200,
-    "selfDrivePerDay": 2500,
-    "selfKmLimitPerDay": 250,
-    "selfExtraPerKm": 12,
+    "driverBataPerDay": 200,
     "selfDeposit": 5000
   },
   "priceNotes": [
-    "Rate: ₹12 per km across all Telangana and Andhra Pradesh destinations.",
-    "Toll gates, parking and interstate border permits are extra, paid as per actuals.",
-    "Driver allowance (bata): ₹500 per day.",
-    "Self drive: fuel is paid by the customer. A refundable deposit of ₹5,000 is taken at pickup.",
-    "Fares shown are estimates. Final booking confirmation will be given by Vinayaka Car Rentals."
+    "Rate: Flat ₹12 per km across all destinations.",
+    "Driver allowance (bata): ₹200 per day (applied only when booking with driver).",
+    "Self drive: Fuel is customer's responsibility. Refundable deposit of ₹5,000 taken at pickup.",
+    "Toll gates, parking and interstate permits are extra as per actuals."
   ]
 }
